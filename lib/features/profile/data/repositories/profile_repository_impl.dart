@@ -49,17 +49,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<Either<Failure, List<MovieEntity>>> getWatchlist() async {
     try {
-      final movies = await remoteDataSource.getWatchlist();
+      final movies = await localDataSource.getWatchlist();
       return Right(movies);
-    } on ServerException {
-      try {
-        final cached = await localDataSource.getWatchlist();
-        return Right(cached);
-      } on CacheException catch (e) {
-        return Left(CacheFailure(e.message));
-      }
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(CacheFailure(e.toString()));
     }
   }
 
@@ -68,12 +63,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
     MovieEntity movie,
   ) async {
     try {
-      final movies = await remoteDataSource.toggleWatchlist(movie);
+      final movies = await localDataSource.toggleWatchlist(movie);
       return Right(movies);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(CacheFailure(e.toString()));
     }
   }
 

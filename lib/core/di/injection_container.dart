@@ -12,6 +12,18 @@ import '../../features/auth/domain/usecases/forgot_password_usecase.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/movies/data/datasources/movie_local_datasource.dart';
+import '../../features/movies/data/datasources/movie_remote_datasource.dart';
+import '../../features/movies/data/repositories/movie_repository_impl.dart';
+import '../../features/movies/domain/repositories/movie_repository.dart';
+import '../../features/movies/domain/usecases/get_home_movies_usecase.dart';
+import '../../features/movies/domain/usecases/get_movie_details_usecase.dart';
+import '../../features/movies/domain/usecases/get_movies_by_genre_usecase.dart';
+import '../../features/movies/domain/usecases/search_movies_usecase.dart';
+import '../../features/movies/presentation/bloc/browse_bloc.dart';
+import '../../features/movies/presentation/bloc/home_bloc.dart';
+import '../../features/movies/presentation/bloc/movie_details_bloc.dart';
+import '../../features/movies/presentation/bloc/search_bloc.dart';
 import '../../features/profile/data/datasources/profile_local_datasource.dart';
 import '../../features/profile/data/datasources/profile_remote_datasource.dart';
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
@@ -37,7 +49,8 @@ Future<void> initDependencies() async {
 
   sl.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
   sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
-  sl.registerLazySingleton<Dio>(() => DioClient().dio);
+  sl.registerLazySingleton<DioClient>(() => DioClient());
+  sl.registerLazySingleton<Dio>(() => sl<DioClient>().dio);
 
   // Auth Feature
   sl.registerLazySingleton<AuthLocalDataSource>(
@@ -64,6 +77,36 @@ Future<void> initDependencies() async {
       registerUseCase: sl(),
       forgotPasswordUseCase: sl(),
     ),
+  );
+
+  // Movies Feature
+  sl.registerLazySingleton<MovieLocalDataSource>(
+    () => MovieLocalDataSourceImpl(),
+  );
+  sl.registerLazySingleton<MovieRemoteDataSource>(
+    () => MovieRemoteDataSourceImpl(sl()),
+  );
+  sl.registerLazySingleton<MovieRepository>(
+    () => MovieRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+    ),
+  );
+  sl.registerLazySingleton(() => GetHomeMoviesUseCase(sl()));
+  sl.registerLazySingleton(() => SearchMoviesUseCase(sl()));
+  sl.registerLazySingleton(() => GetMoviesByGenreUseCase(sl()));
+  sl.registerLazySingleton(() => GetMovieDetailsUseCase(sl()));
+  sl.registerFactory(
+    () => HomeBloc(getHomeMoviesUseCase: sl()),
+  );
+  sl.registerFactory(
+    () => SearchBloc(searchMoviesUseCase: sl()),
+  );
+  sl.registerFactory(
+    () => BrowseBloc(getMoviesByGenreUseCase: sl()),
+  );
+  sl.registerFactory(
+    () => MovieDetailsBloc(getMovieDetailsUseCase: sl()),
   );
 
   // Profile Feature

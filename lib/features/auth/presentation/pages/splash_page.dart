@@ -41,7 +41,7 @@ class _SplashPageState extends State<SplashPage> {
       context,
       MaterialPageRoute(
         builder: (_) =>
-            completed ? const LoginPage() : const OnboardingPage(),
+            completed ? const LoginPage() : const OnBoardingPage(),
       ),
     );
   }

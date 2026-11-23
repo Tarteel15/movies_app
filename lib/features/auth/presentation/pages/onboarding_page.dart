@@ -1,39 +1,89 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/app_assets.dart';
-import '../../../../core/widgets/primary_button.dart';
-import '../../data/datasources/auth_local_datasource.dart';
 import 'login_page.dart';
 
-class OnboardingPage extends StatefulWidget {
-  const OnboardingPage({super.key});
+class OnBoardingPage extends StatefulWidget {
+  const OnBoardingPage({super.key});
 
   @override
-  State<OnboardingPage> createState() => _OnboardingPageState();
+  State<OnBoardingPage> createState() => _OnBoardingPageState();
 }
 
-class _OnboardingPageState extends State<OnboardingPage> {
+class _OnBoardingPageState extends State<OnBoardingPage> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
 
-  static const List<_OnboardingItem> _items = [
-    _OnboardingItem(
-      title: 'Discover Popular Movies',
-      subtitle: 'Browse trending and top-rated movies updated daily.',
-      imagePath: AppAssets.availableNow,
+  final List<_OnBoardingItem> _items = const [
+    _OnBoardingItem(
+      title: 'Find Your Next\nFavorite Movie Here',
+      subtitle:
+          'Get access to a huge library of movies to suit all tastes. You will surely like it.',
+      isFirst: true,
+      isLast: false,
     ),
-    _OnboardingItem(
-      title: 'Search & Filter Easily',
-      subtitle: 'Find movies by title or explore your favorite genres.',
-      imagePath: AppAssets.watchNow,
+    _OnBoardingItem(
+      title: 'Discover Movies',
+      subtitle:
+          'Explore a vast collection of movies in all qualities and genres. Find your next favorite film with ease.',
+      isFirst: false,
+      isLast: false,
     ),
-    _OnboardingItem(
-      title: 'Save Your Watchlist',
-      subtitle: 'Keep track of movies you want to watch anytime.',
-      imagePath: AppAssets.routeLogo,
+    _OnBoardingItem(
+      title: 'Explore All Genres',
+      subtitle:
+          'Discover movies from every genre, in all available qualities. Find something new and exciting to watch every day.',
+      isFirst: false,
+      isLast: false,
+    ),
+    _OnBoardingItem(
+      title: 'Create Watchlists',
+      subtitle:
+          'Save movies to your watchlist to keep track of what you want to watch next. Enjoy films in various qualities and genres.',
+      isFirst: false,
+      isLast: false,
+    ),
+    _OnBoardingItem(
+      title: 'Rate, Review, and Learn',
+      subtitle:
+          'Share your thoughts on the movies you\'ve watched. Dive deep into film details and help others discover great movies with your reviews.',
+      isFirst: false,
+      isLast: false,
+    ),
+    _OnBoardingItem(
+      title: 'Start Watching Now',
+      subtitle: '',
+      isFirst: false,
+      isLast: true,
     ),
   ];
+
+  String? _backgroundAssetForIndex(int index) {
+    if (AppAssets.avatars.isEmpty) return null;
+    return AppAssets.avatars[index % AppAssets.avatars.length];
+  }
+
+  void _goNext() {
+    if (_currentIndex < _items.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
+  }
+
+  void _goBack() {
+    if (_currentIndex > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -41,141 +91,156 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
-  Future<void> _finishOnboarding() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final localDs = AuthLocalDataSourceImpl(prefs);
-      await localDs.setOnboardingCompleted(true);
-    } catch (_) {}
-
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-    );
-  }
-
-  void _onNextPressed() {
-    if (_currentIndex < _items.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      _finishOnboarding();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isLast = _currentIndex == _items.length - 1;
-
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        actions: [
-          TextButton(
-            onPressed: _finishOnboarding,
-            child: const Text(
-              'Skip',
-              style: TextStyle(color: AppColors.primary),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _items.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        item.imagePath,
-                        height: 240,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) => const Icon(
-                          Icons.movie_filter,
-                          size: 110,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        item.title,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        item.subtitle,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textPrimary.withValues(alpha: 0.75),
-                          fontSize: 15,
-                          height: 1.4,
-                        ),
-                      ),
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: _items.length,
+        onPageChanged: (index) => setState(() => _currentIndex = index),
+        itemBuilder: (context, index) {
+          final item = _items[index];
+          final bgAsset = _backgroundAssetForIndex(index);
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              if (bgAsset != null)
+                Image.asset(
+                  bgAsset,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    color: AppColors.surface,
+                  ),
+                )
+              else
+                Container(color: AppColors.surface),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.2),
+                      Colors.black.withValues(alpha: 0.55),
+                      AppColors.background.withValues(alpha: 0.96),
                     ],
                   ),
-                );
-              },
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              _items.length,
-              (index) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: _currentIndex == index ? 22 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: _currentIndex == index
-                      ? AppColors.primary
-                      : AppColors.textPrimary.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: PrimaryButton(
-              text: isLast ? 'Get Started' : 'Next',
-              onPressed: _onNextPressed,
-            ),
-          ),
-        ],
+              SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                      decoration: BoxDecoration(
+                        color: AppColors.background.withValues(alpha: 0.96),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(28),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.title,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (item.subtitle.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              item.subtitle,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF6BD00),
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              onPressed: _goNext,
+                              child: Text(
+                                item.isFirst
+                                    ? 'Explore Now'
+                                    : item.isLast
+                                        ? 'Finish'
+                                        : 'Next',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (!item.isFirst) ...[
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: Color(0xFFF6BD00),
+                                  ),
+                                  foregroundColor: const Color(0xFFF6BD00),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                onPressed: _goBack,
+                                child: const Text(
+                                  'Back',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _OnboardingItem {
+class _OnBoardingItem {
   final String title;
   final String subtitle;
-  final String imagePath;
+  final bool isFirst;
+  final bool isLast;
 
-  const _OnboardingItem({
+  const _OnBoardingItem({
     required this.title,
     required this.subtitle,
-    required this.imagePath,
+    required this.isFirst,
+    required this.isLast,
   });
 }

@@ -17,6 +17,11 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  static const Color _accentYellow = Color(0xFFF6BD00);
+  static const Color _dividerDark = Color(0xFF282A28);
+
+  int _selectedTabIndex = 0; // 0 = Watch List, 1 = History
+
   @override
   void initState() {
     super.initState();
@@ -29,12 +34,12 @@ class _ProfilePageState extends State<ProfilePage> {
         : AppAssets.avatars.first;
 
     return Container(
-      width: 76,
-      height: 76,
-      padding: const EdgeInsets.all(2.5),
+      width: 96,
+      height: 96,
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.primary, width: 2),
+        border: Border.all(color: _accentYellow, width: 2),
       ),
       child: ClipOval(
         child: Image.asset(
@@ -46,10 +51,119 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Icon(
               Icons.person,
               color: AppColors.textPrimary,
-              size: 36,
+              size: 42,
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderStat({
+    required String count,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            children: [
+              Text(
+                count,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabItem({
+    required int index,
+    required String label,
+    required IconData icon,
+  }) {
+    final isSelected = _selectedTabIndex == index;
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _selectedTabIndex = index),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Icon(
+              icon,
+              color: _accentYellow,
+              size: 24,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              height: 3,
+              color: isSelected ? _accentYellow : Colors.transparent,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyPopcornState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 92,
+            height: 92,
+            decoration: BoxDecoration(
+              color: _accentYellow.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.local_movies_rounded,
+              color: _accentYellow,
+              size: 52,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            _selectedTabIndex == 0
+                ? 'Your watch list is empty'
+                : 'Your history is empty',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -58,142 +172,201 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.error),
-            onPressed: () {
-              context.read<ProfileBloc>().add(const LogoutEvent());
-            },
-          ),
-        ],
-      ),
-      body: BlocConsumer<ProfileBloc, ProfileState>(
-        listener: (context, state) {
-          if (state.status == ProfileStatus.loggedOut) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-              (route) => false,
-            );
-          } else if (state.status == ProfileStatus.failure &&
-              state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: AppColors.error,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state.status == ProfileStatus.loading && state.user == null) {
-            return const Center(child: LoadingIndicator());
-          }
+      body: SafeArea(
+        child: BlocConsumer<ProfileBloc, ProfileState>(
+          listener: (context, state) {
+            if (state.status == ProfileStatus.loggedOut) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+                (route) => false,
+              );
+            } else if (state.status == ProfileStatus.failure &&
+                state.errorMessage != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage!),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state.status == ProfileStatus.loading && state.user == null) {
+              return const Center(child: LoadingIndicator());
+            }
 
-          final user = state.user;
+            final user = state.user;
+            final wishListMovies = state.watchlist;
+            final historyMovies = state.history;
+            final activeMovies =
+                _selectedTabIndex == 0 ? wishListMovies : historyMovies;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+            return RefreshIndicator(
+              color: _accentYellow,
+              backgroundColor: AppColors.surface,
+              onRefresh: () async {
+                context.read<ProfileBloc>().add(const LoadProfileEvent());
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildAvatar(user?.avatarPath),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.name ?? 'User',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            user?.email ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.textPrimary.withValues(
-                                alpha: 0.7,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _buildAvatar(user?.avatarPath),
+                        const SizedBox(width: 12),
+                        _buildHeaderStat(
+                          count: '${wishListMovies.length}',
+                          label: 'Wish List',
+                          onTap: () => setState(() => _selectedTabIndex = 0),
+                        ),
+                        _buildHeaderStat(
+                          count: '${historyMovies.length}',
+                          label: 'History',
+                          onTap: () => setState(() => _selectedTabIndex = 1),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      user?.name ?? 'User',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 6,
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _accentYellow,
+                                foregroundColor: Colors.black,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                               ),
-                              fontSize: 13,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => UpdateProfilePage(
+                                      initialName: user?.name ?? '',
+                                      initialAvatarPath: user?.avatarPath,
+                                    ),
+                                  ),
+                                ).then((_) {
+                                  if (context.mounted) {
+                                    context.read<ProfileBloc>().add(
+                                          const LoadProfileEvent(),
+                                        );
+                                  }
+                                });
+                              },
+                              child: const Text(
+                                'Edit Profile',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    OutlinedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => UpdateProfilePage(
-                              initialName: user?.name ?? '',
-                              initialAvatarPath: user?.avatarPath,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 4,
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE51924),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              onPressed: () {
+                                context
+                                    .read<ProfileBloc>()
+                                    .add(const LogoutEvent());
+                              },
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Exit',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Icon(Icons.logout, size: 18),
+                                ],
+                              ),
                             ),
                           ),
-                        ).then((_) {
-                          if (context.mounted) {
-                            context.read<ProfileBloc>().add(
-                              const LoadProfileEvent(),
-                            );
-                          }
-                        });
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.primary),
-                        foregroundColor: AppColors.primary,
-                      ),
-                      child: const Text('Edit'),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _buildTabItem(
+                          index: 0,
+                          label: 'Watch List',
+                          icon: Icons.format_list_bulleted_rounded,
+                        ),
+                        _buildTabItem(
+                          index: 1,
+                          label: 'History',
+                          icon: Icons.folder_rounded,
+                        ),
+                      ],
+                    ),
+                    Container(height: 1, color: _dividerDark),
+                    const SizedBox(height: 12),
+                    activeMovies.isEmpty
+                        ? _buildEmptyPopcornState()
+                        : WatchlistGridWidget(
+                            movies: activeMovies,
+                            onMovieTap: (movie) {
+                              context
+                                  .read<ProfileBloc>()
+                                  .add(AddToHistoryEvent(movie));
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      MovieDetailsPage(movieId: movie.id),
+                                ),
+                              ).then((_) {
+                                if (context.mounted) {
+                                  context.read<ProfileBloc>().add(
+                                        const LoadProfileEvent(),
+                                      );
+                                }
+                              });
+                            },
+                          ),
                   ],
                 ),
-                const SizedBox(height: 28),
-                const Text(
-                  'Watchlist',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                WatchlistGridWidget(
-                  movies: state.watchlist,
-                  onMovieTap: (movie) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MovieDetailsPage(movieId: movie.id),
-                      ),
-                    ).then((_) {
-                      if (context.mounted) {
-                        context.read<ProfileBloc>().add(
-                          const LoadProfileEvent(),
-                        );
-                      }
-                    });
-                  },
-                ),
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
